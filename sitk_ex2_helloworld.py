@@ -18,6 +18,7 @@
 #=========================================================================
 
 import SimpleITK as sitk
+import matplotlib.pyplot as plt
 
 # Create an image
 pixelType = sitk.sitkUInt8
@@ -55,4 +56,6 @@ face      = sitk.Paste(face, mouth, mouthSize, mouthLoc, mouthLoc)
 image = image+face
 
 # Display the results
+# plt.imshow(sitk.GetArrayFromImage(image))
+# plt.show()
 sitk.Show( image, title="Hello World: Python", debugOn=True )
