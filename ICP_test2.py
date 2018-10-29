@@ -72,6 +72,6 @@ plt.legend(['Scene', 'Initial Model', 'Final Model'])
 plt.show()
 
 print("[shift = (%.03f, %.03f), rotate = %.4f]" % (shift_x, shift_y, rotate_th))
-print("Initial error (mse) = ", np.sum((M - S[indices, :])**2)/n_pts)
-print("Final error (mse) = ", np.sum((M_T - S[indices, :])**2)/n_pts)
+print("Initial error (mse) = %.6f" % (np.sum((M - S[indices, :])**2)/n_pts))
+print("Final error (mse) = %.6f" % (np.sum((M_T - S[indices, :])**2)/n_pts))
 print("Success (%) = ", success*100)
