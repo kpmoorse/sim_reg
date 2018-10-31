@@ -1,3 +1,5 @@
+#Test ICP algorithm on hex-packed points with random transformation
+
 from ICP import *
 import numpy as np
 import random

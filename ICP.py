@@ -56,7 +56,7 @@ def ICP(scene, model, num_iters, W=[]):
         indices = np.ndarray.flatten(indices)
 
         # Approximate transform based on nearest neighbors
-        T_est = T_est.dot(np.linalg.pinv(model_current).dot(scene[indices, :]))
+        T_est = T_est.dot(linreg(model_current, scene[indices, :], W))
 
     return T_est, indices
 
