@@ -69,7 +69,9 @@ success = success/n_pts
 plt.ylim((-1.5, 1.5))
 plt.xlim((-1.5, 1.5))
 plt.legend(['Scene', 'Initial Model', 'Final Model'])
+# plt.savefig('ICP_out01.png')
 plt.show()
+
 
 print("[shift = (%.03f, %.03f), rotate = %.4f]" % (shift_x, shift_y, rotate_th))
 print("Initial error (mse) = %.6f" % (np.sum((M - S[indices, :])**2)/n_pts))

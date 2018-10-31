@@ -20,7 +20,7 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
 
-def ICP(scene, model, num_iters):
+def ICP(scene, model, num_iters, W=[]):
 
     scene = np.array(scene)
     model = np.array(model)
@@ -56,7 +56,7 @@ def ICP(scene, model, num_iters):
         indices = np.ndarray.flatten(indices)
 
         # Approximate transform based on nearest neighbors
-        T_est = T_est.dot(np.linalg.pinv(model_current).dot(scene[indices, :]))  # NOTE: transform is NOT affine
+        T_est = T_est.dot(np.linalg.pinv(model_current).dot(scene[indices, :]))
 
     return T_est, indices
 
@@ -65,3 +65,10 @@ def ICP(scene, model, num_iters):
 def append_unity(matrix, ax=1):
 
     return np.concatenate((matrix, np.ones((np.shape(matrix)[0], 1))), axis=ax)
+
+def linreg(X, Y, W=[]):
+
+    if len(W) == 0:
+        W = np.identity(X.shape[0])
+
+    return np.linalg.inv(X.T.dot(W).dot(X)).dot(X.T).dot(W).dot(Y)
