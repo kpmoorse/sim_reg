@@ -5,6 +5,7 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 import math as m
+from alphashape import *
 
 # n_pts = 100
 # S = append_unity(np.random.random((n_pts, 2))*2-1)
@@ -34,7 +35,7 @@ T_t = lambda x, y: np.array([[1, 0, x],
 # Initialize error ranges
 shift = 0.05  # units
 rotate = 0.1  # radians
-noise = 0.05  # units
+noise = 0.00  # units
 
 # Generate specific errors
 shift_th = random.random()*2*m.pi
@@ -49,6 +50,9 @@ M[:, :2] += np.random.random((M.shape[0], 2))*2*noise-noise
 ix_init = np.random.permutation(n_pts_S)[:n_pts]
 M = M[ix_init, :]
 
+# boundary_ix = alphashape_2D(M[:, :2], 2)
+# M = M[list(boundary_ix), :]
+
 # Run ICP on generated data
 T_est, indices = ICP(S, M, 15)
 
@@ -58,8 +62,9 @@ plt.plot(M[:, 0], M[:, 1], 'o')
 plt.plot(M.dot(T_est)[:, 0], M.dot(T_est)[:, 1], '.')
 
 M_T = M.dot(T_est)
+# ix_init = ix_init[list(boundary_ix)]
 success = n_pts
-for i in range(n_pts):
+for i in range(len(indices)):
     plt.plot([M[i, 0], S[ix_init[i], 0]], [M[i, 1], S[ix_init[i], 1]], '0.5')
     plt.plot([M_T[i, 0], S[ix_init[i], 0]], [M_T[i, 1], S[ix_init[i], 1]], '0.5')
     if indices[i] != ix_init[i]:

@@ -18,6 +18,7 @@
 
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
+import matplotlib.pyplot as plt
 
 
 def ICP(scene, model, num_iters, W=[]):
@@ -56,7 +57,17 @@ def ICP(scene, model, num_iters, W=[]):
         indices = np.ndarray.flatten(indices)
 
         # Approximate transform based on nearest neighbors
-        T_est = T_est.dot(linreg(model_current, scene[indices, :], W))
+        T_est_new = T_est.dot(linreg(model_current, scene[indices, :], W))
+        if (T_est_new != T_est).all:
+            T_est = T_est_new
+        else:
+            break
+
+        # plt.plot(scene[:, 0], scene[:, 1], 'o')
+        # plt.plot(model[:, 0], model[:, 1], 'o')
+        # plt.plot(model.dot(T_est)[:, 0], model.dot(T_est)[:, 1], '.')
+        # plt.show()
+        # input()
 
     return T_est, indices
 

@@ -1,13 +1,15 @@
-#Test ICP algorithm with centroid-distance-squared (cd-square) weighting vs uniform
+#Test ICP algorithm using only alpha-shape boundary points
 
 from ICP import *
+from alphashape import *
 import numpy as np
 import random
 import matplotlib.pyplot as plt
 import math as m
 from tqdm import tqdm
 
-shift_range = np.arange(0, 0.1, 0.01)
+shift_range = np.arange(0, 0.2, 0.01)
+# shift_range = [0.1]
 n_samples = 100
 
 ols_dist = []
@@ -46,7 +48,7 @@ for shift in tqdm(shift_range):
         # Initialize error ranges
         # shift = 0.05  # units
         rotate = 0.1  # radians
-        noise = 0.05  # units
+        noise = 0.0001  # units
 
         # Generate specific errors
         shift_th = random.random()*2*m.pi
@@ -61,24 +63,41 @@ for shift in tqdm(shift_range):
         ix_init = np.random.permutation(n_pts_S)[:n_pts]
         M = M[ix_init, :]
 
-        # Calculate weights based on distance from centroid
-        # (More distant points are weighted more heavily)
-        N = M.shape[0]
-        m_bar = np.mean(M, axis=0)
-        w_list = np.linalg.norm(M - np.tile(m_bar, (N, 1)), axis=1)
-        # w_list = np.random.random(N)
-        W = np.diag(w_list)
+        boundary_ix = alphashape_2D(M[:, :2], 2)
+        M_alpha = M[list(boundary_ix), :]
+
+        # # Calculate weights based on distance from centroid
+        # # (More distant points are weighted more heavily)
+        # N = M.shape[0]
+        # m_bar = np.mean(M, axis=0)
+        # w_list = np.linalg.norm(M - np.tile(m_bar, (N, 1)), axis=1)
+        # # w_list = np.random.random(N)
+        # W = np.diag(w_list)
+        W = np.identity(n_pts)
 
         # Run ICP on generated data
         T_ols, indices = ICP(S, M, 15)
-        success_ols = sum(ix_init == indices) / n_pts
+        success_ols = sum(ix_init == indices) / len(indices)
         ols_sample.append(success_ols)
-        T_wls, indices = ICP(S, M, 15, W=W)
-        success_wls = sum(ix_init == indices) / n_pts
+
+        T_wls, indices = ICP(S, M_alpha, 15)
+        success_wls = sum(ix_init[list(boundary_ix)] == indices) / len(indices)
         wls_sample.append(success_wls)
 
-    ols_dist.append(sum(np.array(ols_sample)==1)/n_samples)
+        # plt.plot(S[:,0], S[:,1], 'o')
+        # plt.plot(M[:,0], M[:,1], 'o')
+        # plt.plot(M.dot(T_ols)[:,0], M.dot(T_ols)[:,1], '.')
+        # plt.plot(M.dot(T_wls)[:,0], M.dot(T_wls)[:,1], '.')
+        # plt.show()
+        # input()
+
+    ols_dist.append(sum(np.array(ols_sample) == 1)/n_samples)
     wls_dist.append(sum(np.array(wls_sample) == 1) / n_samples)
+
+# plt.plot(S[:, 0], S[:, 1], 'o')
+# plt.plot(M[:, 0], M[:, 1], 'o')
+# plt.plot(M_alpha[:, 0], M_alpha[:, 1], 'ro')
+# plt.show()
 
 # bins = np.linspace(0, 1, 25)
 # plt.hist(ols_sample, bins, alpha=0.5, edgecolor='k')
@@ -86,6 +105,7 @@ for shift in tqdm(shift_range):
 # plt.title('ICP proportions of successful correspondence')
 # plt.legend(('OLS', 'WLS'))
 # plt.show()
+
 plt.title('ICP proportions of successful correspondence')
 plt.plot(shift_range, ols_dist, shift_range, wls_dist)
 plt.xlabel('Shift Magnitude')
