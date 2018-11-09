@@ -1,5 +1,9 @@
 #Test ICP algorithm using only alpha-shape boundary points
 
+import sys
+sys.path.insert(0, '/home/honglab/Documents/git/im_reg/Python ICP')
+sys.path.insert(0, '/home/honglab/Documents/git/im_reg/Python alphashape')
+
 from ICP import *
 from alphashape import *
 import numpy as np

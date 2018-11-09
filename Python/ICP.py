@@ -59,10 +59,10 @@ def ICP_2D(scene, model, num_iters, W=[]):
         T_est_new = T_est.dot(linreg(model_current, scene[indices, :], W))
 
         # Break if there is no change in T_est
-        if (T_est_new != T_est).all:
-            T_est = T_est_new
-        else:
+        if (T_est_new == T_est).all:
             break
+        else:
+            T_est = T_est_new
 
         # plt.plot(scene[:, 0], scene[:, 1], 'o')
         # plt.plot(model[:, 0], model[:, 1], 'o')
