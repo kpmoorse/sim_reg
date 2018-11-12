@@ -34,6 +34,7 @@ function t_est = icp2(scene, model, num_iters)
     
 end
 
+% Custom linear regression allows future weight implementation
 function B = linreg(X, Y)
 
     B = inv(X.'*X)*X.'*Y;
