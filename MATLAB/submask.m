@@ -22,10 +22,10 @@ end
 r = radius;
 if ~exist('mask', 'var')
     [X,Y] = ndgrid(-r:r, -r:r);
-    mask = float(sqrt(X.^2+Y.^2)<=r);
+    mask = double(sqrt(X.^2+Y.^2)<=r);
 end
 
-sub = float(img(ctr(1)+(-r:r), ctr(2)+(-r:r)));
+sub = double(img(round(ctr(1))+(-r:r), round(ctr(2))+(-r:r)));
 sub = sub.*mask;
 
 end

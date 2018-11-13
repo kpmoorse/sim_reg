@@ -1,5 +1,6 @@
-function t_est = icp2(scene, model, num_iters, W)
-%ICP2 Register model to scene with the Iterative Closest Point algorithm
+function t_est = simreg2(scene, scn_im, model, mdl_im, num_iters)
+%SIMREG2 Register model to scene, weighting correspondence by image similarity
+%   Detailed explanation goes here
 
 if ~exist('W', 'var')
     W = eye(size(model,1));
@@ -17,6 +18,11 @@ for i = 1:num_iters
     model_current = model*t_est;
     indices = knnsearch(scene, model_current);
 
+    % Generate weights using image similarity via Hu moments
+    for i=1:size(model, 1)
+        
+    end
+    
     % Iterate transform by linear regression
     t_est_new = t_est*linreg(model_current, scene(indices, :), W);
 
@@ -30,17 +36,7 @@ for i = 1:num_iters
 
 end
 
-% Plot results
-plot(scene(:,1), scene(:,2), 'o')
-hold on
-plot(model(:,1), model(:,2), 'o')
-for i = 1:numel(indices)
-    plot([scene(indices(i),1), model(i,1)], [scene(indices(i),2), model(i,2)], 'k-')
-    plot([scene(indices(i),1), model_current(i,1)], [scene(indices(i),2), model_current(i,2)], 'k-')
-end
-plot(model_current(:,1), model_current(:,2), 'x')
-hold off
-    
+
 end
 
 % Custom linear regression allows non-identity weight matrix
@@ -50,7 +46,7 @@ if ~exist('W', 'var')
     W = eye(size(X,1));
 end
 B = inv(X.'*W*X)*X.'*W*Y;
-    
+
 end
 
 % Append a column of ones to the input matrix if it is not already Nx3
@@ -59,5 +55,12 @@ function mat = append_ones(mat)
 if size(mat, 2) < 3
     mat = [mat, ones(size(mat, 1),1)];
 end
+
+end
+
+
+function r = corr(a, b)
+
+    r = sum(a.*b)/(sum(a)*sum(b);
 
 end

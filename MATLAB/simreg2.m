@@ -1,12 +1,23 @@
-function t_est = icp2(scene, model, num_iters, W)
-%ICP2 Register model to scene with the Iterative Closest Point algorithm
+function t_est = simreg2(scene, scn_im, model, mdl_im, num_iters)
+%SIMREG2 Register model to scene, weighting correspondence by image similarity
+%   Detailed explanation goes here
 
-if ~exist('W', 'var')
-    W = eye(size(model,1));
-end
-
+% Ensure proper point cloud formatting
 scene = append_ones(scene);
 model = append_ones(model);
+
+% Initialize weight matrix
+W = eye(size(model,1));
+
+% Precalculate Hu moments for each point
+scn_hu = zeros(size(scene,1),7);
+mdl_hu = zeros(size(model,1),7);
+for i=1:size(scene,1)
+    scn_hu(i,:) = hu(submask(scn_im, scene(i, 1:2)));
+end
+for i=1:size(model,1)
+    mdl_hu(i,:) = hu(submask(mdl_im, model(i, 1:2)));
+end
 
 % Initialize transform estimate as identity matrix
 t_est = eye(3);
@@ -17,6 +28,14 @@ for i = 1:num_iters
     model_current = model*t_est;
     indices = knnsearch(scene, model_current);
 
+    % Generate weights using image similarity via Hu moments
+    for j=1:size(model, 1)
+        k = indices(j);
+        a = scn_hu(k,:);
+        b = mdl_hu(j,:);
+        W(i,i) = corr(a, b);
+    end
+    
     % Iterate transform by linear regression
     t_est_new = t_est*linreg(model_current, scene(indices, :), W);
 
@@ -40,7 +59,7 @@ for i = 1:numel(indices)
 end
 plot(model_current(:,1), model_current(:,2), 'x')
 hold off
-    
+
 end
 
 % Custom linear regression allows non-identity weight matrix
@@ -50,7 +69,7 @@ if ~exist('W', 'var')
     W = eye(size(X,1));
 end
 B = inv(X.'*W*X)*X.'*W*Y;
-    
+
 end
 
 % Append a column of ones to the input matrix if it is not already Nx3
@@ -59,5 +78,12 @@ function mat = append_ones(mat)
 if size(mat, 2) < 3
     mat = [mat, ones(size(mat, 1),1)];
 end
+
+end
+
+% Calculate a basic correlation coefficient between arrays
+function r = corr(a, b)
+
+    r = sum(a.*b)/(sum(a)*sum(b));
 
 end
