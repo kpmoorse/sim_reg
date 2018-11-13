@@ -2,6 +2,8 @@ function I = hu(img, varargin)
 %EXTHU Calculate Hu moments for an image
 %   Detailed explanation goes here
 
+img = img > mean(img, 'all');
+
 % Calculate central moment
 n00 = im_moment(img,0,0);
 

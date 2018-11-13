@@ -1,0 +1,25 @@
+function icp_vs_sim(scene, scn_im, model, mdl_im, num_iters)
+
+t_icp = icp2(scene, model, num_iters);
+t_sim = simreg2(scene, scn_im, model, mdl_im, num_iters);
+
+T_icp = projective2d(t_icp);
+T_sim = projective2d(t_sim);
+
+subplot(2,3,1)
+imshow(imfuse(scn_im, mdl_im, 'falsecolor','scaling','joint','ColorChannels',[1,2,0]),[1,500])
+title("Original")
+
+subplot(2,3,2)
+scatte
+
+subplot(2,3,3)
+imshow(imfuse(scn_im, imwarp(mdl_im, T_icp), 'falsecolor','scaling','joint','ColorChannels',[1,2,0]),[1,500])
+title("Naive ICP")
+
+subplot(2,3,5)
+imshow(imfuse(scn_im, imwarp(mdl_im, T_sim), 'falsecolor','scaling','joint','ColorChannels',[1,2,0]),[1,500])
+title("Hu Similarity ICP")
+
+end
+

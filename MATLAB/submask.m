@@ -17,7 +17,7 @@ while ~isempty(varargin)
 end
 
 if ~exist('radius', 'var')
-    radius = 20;
+    radius = 10;
 end
 r = radius;
 if ~exist('mask', 'var')

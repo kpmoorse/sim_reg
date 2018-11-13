@@ -33,7 +33,7 @@ for i = 1:num_iters
         k = indices(j);
         a = scn_hu(k,:);
         b = mdl_hu(j,:);
-        W(i,i) = corr(a, b);
+        W(j,j) = corr(a, b);
     end
     
     % Iterate transform by linear regression
@@ -85,5 +85,6 @@ end
 function r = corr(a, b)
 
     r = sum(a.*b)/(sum(a)*sum(b));
+%     r = mean(abs(a-b)/(a+b));
 
 end
