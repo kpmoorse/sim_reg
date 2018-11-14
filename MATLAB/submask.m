@@ -17,7 +17,7 @@ while ~isempty(varargin)
 end
 
 if ~exist('radius', 'var')
-    radius = 10;
+    radius = 20;
 end
 r = radius;
 if ~exist('mask', 'var')
@@ -25,7 +25,7 @@ if ~exist('mask', 'var')
     mask = double(sqrt(X.^2+Y.^2)<=r);
 end
 
-sub = double(img(round(ctr(1))+(-r:r), round(ctr(2))+(-r:r)));
+sub = double(img(round(ctr(2))+(-r:r), round(ctr(1))+(-r:r)));
 sub = sub.*mask;
 
 end
