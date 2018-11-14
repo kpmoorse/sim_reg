@@ -42,7 +42,7 @@ for i = 1:num_iters
         k = indices(j);
         a = scn_hu(k,:);
         b = mdl_hu(j,:);
-        W(j,j) = corr(a, b);
+        W(j,j) = sim(a, b);
     end
     
     % Iterate transform by linear regression
@@ -58,28 +58,41 @@ for i = 1:num_iters
 
 end
 
+% Display diagnostic plots for each neuron
 T = projective2d(t_est);
-for i=1:20%numel(model)
+for i=1:numel(model)
+    
+    j = indices(i);
     
     subplot(1,2,1)
-    imshow(imadjust(imfuse(scn_im, imwarp(mdl_im, T), 'falsecolor', 'scaling', 'joint', ...
-        'ColorChannels',[1,2,0] ), [0 0 0; 0.5 0.5 0.5]))
-    title(sprintf("Hu-Sim ICP (\\lambda=10^{%i})",round(log(l)/log(10))))
+    imshow(imadjust(imfuse(imwarp(mdl_im, T), scn_im*0, 'falsecolor', 'scaling', 'joint', ...
+        'ColorChannels',[1,2,0] ), [0 0 0; 0.5 0.5 0.5])) %mdl=red, scn=red
+    hold on
+    plot([scene(j,1), model(i,1)], [scene(j,2), model(i,2)], '.-w')
+    if l==0
+        title("Hu-Sim ICP (\lambda=0)")
+    else
+        title(sprintf("Hu-Sim ICP (\\lambda=10^{%.1f})",round(log(l)/log(10))))
+    end
     
     subplot(2,4,3)
-    imshow(submask(scn_im, scene(indices(i), 1:2)),[])
-    title('Scene')
+    imshow(submask(scn_im, scene(j, 1:2)),[0,500])
+    hold on
+    plot(21, 21, 'g.', 'MarkerSize', 15)
+    title(sprintf('Scene[%i] (Anatomical)', i))
     
     subplot(2,4,4)
-    imshow(submask(mdl_im, model(i, 1:2)),[])
-    title('Model')
+    imshow(submask(mdl_im, model(i, 1:2)),[0,500])
+    hold on
+    plot(21, 21, 'r.', 'MarkerSize', 15)
+    title(sprintf('Model[%i] (Functional)', i))
     
     subplot(2,2,4)
-    a = scn_hu(indices(i),:);
+    a = scn_hu(j, :);
     b = mdl_hu(i, :);
-    plotyy(1:7,a b].')
-    disp(scn_hu)
-    title(sprintf("Hu Moment Correlation (r = %.04f)", corr(a, b)))
+    bar([a; b].')
+    legend('Scene', 'Model')
+    title(sprintf("Hu Moments (sim = %.04f)", sim(a, b)))
     
     pause
 end
@@ -126,4 +139,10 @@ function r = corr(a, b)
     r = sum(a.*b)/sqrt(sum(a.^2)*sum(b.^2));
 %     r = mean(abs(a-b)/(a+b));
 
+end
+
+function s = sim(a, b)
+
+    s = dot(a,b)/(norm(a)*norm(b));
+    
 end

@@ -58,14 +58,15 @@ for i = 1:num_iters
 
 end
 
+% Display diagnostic plots for each neuron
 T = projective2d(t_est);
 for i=1:numel(model)
     
     j = indices(i);
     
     subplot(1,2,1)
-    imshow(imadjust(imfuse(scn_im, imwarp(mdl_im, T), 'falsecolor', 'scaling', 'joint', ...
-        'ColorChannels',[1,2,0] ), [0 0 0; 0.5 0.5 0.5]))
+    imshow(imadjust(imfuse(imwarp(scale(mdl_im), T), scale(scn_im), 'falsecolor', 'scaling', 'joint', ...
+        'ColorChannels',[1,2,0] ), [0 0 0; 0.5 0.5 0.5])) % mdl=red, scn=grn
     hold on
     plot([scene(j,1), model(i,1)], [scene(j,2), model(i,2)], '.-w')
     if l==0
@@ -90,7 +91,6 @@ for i=1:numel(model)
     a = scn_hu(j, :);
     b = mdl_hu(i, :);
     bar([a; b].')
-%     disp(scn_hu)
     legend('Scene', 'Model')
     title(sprintf("Hu Moments (sim = %.04f)", sim(a, b)))
     
@@ -113,7 +113,6 @@ end
 
 % Custom linear regression with weight matrix and lambda constraint
 function B = linreg(X, Y, W, l)
-
 if ~exist('W', 'var')
     W = eye(size(X,1));
 end
@@ -121,28 +120,24 @@ if ~exist('l', 'var')
     l = 0;
 end
 B = inv(X.'*W*X + l*eye(3))*X.'*W*Y;
-
 end
 
 % Append a column of ones to the input matrix if it is not already Nx3
 function mat = append_ones(mat)
-
 if size(mat, 2) < 3
     mat = [mat, ones(size(mat, 1),1)];
 end
-
 end
 
 % Calculate a basic correlation coefficient between arrays
 function r = corr(a, b)
-
     r = sum(a.*b)/sqrt(sum(a.^2)*sum(b.^2));
 %     r = mean(abs(a-b)/(a+b));
-
 end
 
 function s = sim(a, b)
-
-    s = dot(a,b)/(norm(a)*norm(b));
-    
+    s = dot(a,b)/(norm(a)*norm(b));  
+end
+function mat = scale(mat)
+    mat = mat/max(mat,[],'all');
 end
