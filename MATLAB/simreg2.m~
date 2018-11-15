@@ -5,6 +5,7 @@ function [t_est, indices] = simreg2(scene, scn_im, model, mdl_im, num_iters, var
 % Set default varargin values
 l = 0;
 diagplot = true;
+t_init = eye(3);
 
 % Loop over varargin elements
 while ~isempty(varargin)
@@ -12,8 +13,12 @@ while ~isempty(varargin)
 
         case 'lambda'
             l = varargin{2};
+            assert(mod(l,1)==0, "Lambda must be an integer")
         case 'diagnostic'
             diagplot = varargin{2};
+            assert
+        case 'initial'
+            t_init = varargin{2}
 
     end
 
@@ -47,7 +52,7 @@ scn_hu = scn_hu./mean_hu;
 mdl_hu = mdl_hu./mean_hu;
 
 % Initialize transform estimate as identity matrix
-t_est = eye(3);
+t_est = t_init;
 
 for i = 1:num_iters
 
@@ -129,11 +134,26 @@ for i=1:numel(model)
                 flag = false;
             case 'a'
                 subplot(2,4,3)
-                pts = scene(vecnorm(scene - scene(j,:),2, 2)<rad/2, :);
-                pts = pts - scene(j,:) + [rad rad 0];
+                pts = scene(vecnorm(scene - scene(j,:),2, 2)<rad/2, 1:2);
+                pts = pts - scene(j,1:2) + [rad rad];
                 plot(pts(:,1), pts(:,2), 'go', 'MarkerSize', 10)
-                [x,y] = myginput(1, 'arrow');
-                adj_pt = 
+                
+                gin = myginput(1, 'arrow');
+                [~,adj_ix] = min(vecnorm(pts-gin, 2, 2));
+                adj_pt = pts(adj_ix, :);
+                adj_pt = adj_pt + scene(j,1:2) - [rad rad];
+                scene_ix = find(and(scene(:,1)==adj_pt(1), scene(:,2)==adj_pt(2)));
+                
+                indices(i) = scene_ix;
+                j = indices(i);
+                
+                subplot(2,4,3)
+                imshow(submask(scn_im, scene(j, 1:2)),[0,500])
+                hold on
+                plot(rad, rad, 'g.', 'MarkerSize', 15)
+                title(sprintf('Scene[%i] (Anatomical)', i))
+            otherwise
+                flag = false;
         end
     end
 end

@@ -5,6 +5,7 @@ function [t_est, indices] = simreg2(scene, scn_im, model, mdl_im, num_iters, var
 % Set default varargin values
 l = 0;
 diagplot = true;
+t_init = eye(3);
 
 % Loop over varargin elements
 while ~isempty(varargin)
@@ -12,8 +13,14 @@ while ~isempty(varargin)
 
         case 'lambda'
             l = varargin{2};
+            assert(and(isnumeric(l), numel(l)==1, mod(l,1)==0), ...
+                "Lambda must be a scalar integer")
         case 'diagnostic'
             diagplot = varargin{2};
+        case 'initial'
+            t_init = varargin{2};
+            assert(and(isnumeric(t_init), all(size(t_init)==[3,3])), ...
+                "Initial guess must be a 3x3 numeric array")
 
     end
 
@@ -47,7 +54,7 @@ scn_hu = scn_hu./mean_hu;
 mdl_hu = mdl_hu./mean_hu;
 
 % Initialize transform estimate as identity matrix
-t_est = eye(3);
+t_est = t_init;
 
 for i = 1:num_iters
 

@@ -1,7 +1,0 @@
-function mij = immnt(img, i, j)
-%IMMNT Calculate the moment M_ij of the input image
-%   Detailed explanation goes here
-outputArg1 = inputArg1;
-outputArg2 = inputArg2;
-end
-
