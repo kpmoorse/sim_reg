@@ -1,6 +1,24 @@
-function t_est = simreg2(scene, scn_im, model, mdl_im, num_iters, l)
+function [t_est, indices] = simreg2(scene, scn_im, model, mdl_im, num_iters, varargin)
 %SIMREG2 Register model to scene, weighting correspondence by image similarity
 %   Detailed explanation goes here
+
+% Set default varargin values
+l = 0;
+diagplot = true;
+
+% Loop over varargin elements
+while ~isempty(varargin)
+    switch lower(varargin{1})
+
+        case 'lambda'
+            l = varargin{2};
+        case 'diagnostic'
+            diagplot = varargin{2};
+
+    end
+
+    varargin(1:2) = [];
+end
 
 % Ensure proper point cloud formatting
 scene = append_ones(scene);
@@ -13,7 +31,7 @@ if ~exist('l', 'var')
     l = 0;
 end
 
-% Precalculate Hu moments for each point
+% Precalculate Hu moment vectors for each point
 scn_hu = zeros(size(scene,1),7);
 mdl_hu = zeros(size(model,1),7);
 for i=1:size(scene,1)
@@ -42,7 +60,7 @@ for i = 1:num_iters
         k = indices(j);
         a = scn_hu(k,:);
         b = mdl_hu(j,:);
-        W(j,j) = sim(a, b);
+        W(j,j) = corr(a, b);
     end
     
     % Iterate transform by linear regression
@@ -58,15 +76,21 @@ for i = 1:num_iters
 
 end
 
+if ~diagplot
+    return
+end
+
 % Display diagnostic plots for each neuron
 T = projective2d(t_est);
+rad = ceil(size(submask(scn_im, scene(1, 1:2)), 1)/2);
+
 for i=1:numel(model)
     
     j = indices(i);
     
     subplot(1,2,1)
-    imshow(imadjust(imfuse(imwarp(mdl_im, T), scn_im*0, 'falsecolor', 'scaling', 'joint', ...
-        'ColorChannels',[1,2,0] ), [0 0 0; 0.5 0.5 0.5])) %mdl=red, scn=red
+    imshow(imadjust(imfuse(imwarp(scale(mdl_im), T), scale(scn_im), 'falsecolor', 'scaling', 'joint', ...
+        'ColorChannels',[1,2,0] ), [0 0 0; 0.5 0.5 0.5])) % mdl=red, scn=grn
     hold on
     plot([scene(j,1), model(i,1)], [scene(j,2), model(i,2)], '.-w')
     if l==0
@@ -78,13 +102,13 @@ for i=1:numel(model)
     subplot(2,4,3)
     imshow(submask(scn_im, scene(j, 1:2)),[0,500])
     hold on
-    plot(21, 21, 'g.', 'MarkerSize', 15)
+    plot(rad, rad, 'g.', 'MarkerSize', 15)
     title(sprintf('Scene[%i] (Anatomical)', i))
     
     subplot(2,4,4)
     imshow(submask(mdl_im, model(i, 1:2)),[0,500])
     hold on
-    plot(21, 21, 'r.', 'MarkerSize', 15)
+    plot(rad, rad, 'r.', 'MarkerSize', 15)
     title(sprintf('Model[%i] (Functional)', i))
     
     subplot(2,2,4)
@@ -92,28 +116,32 @@ for i=1:numel(model)
     b = mdl_hu(i, :);
     bar([a; b].')
     legend('Scene', 'Model')
-    title(sprintf("Hu Moments (sim = %.04f)", sim(a, b)))
+    title(sprintf("Hu Moments (corr = %.04f)", corr(a, b)))
     
-    pause
+    flag = true;
+    while flag
+        uin = input(sprintf('[#%03i] [Y:Accept] / N:Reject / A:Adjust: ', i), 's');
+        switch lower(uin)
+            case 'y'
+                flag = false;
+            case 'n'
+                indices(i) = 0;
+                flag = false;
+            case 'a'
+                subplot(2,4,3)
+                pts = scene(vecnorm(scene - scene(j,:),2, 2)<rad/2, :);
+                pts = pts - scene(j,:) + [rad rad 0];
+                plot(pts(:,1), pts(:,2), 'go', 'MarkerSize', 10)
+                [x,y] = myginput(1, 'arrow');
+                adj_pt = 
+        end
+    end
 end
-
-
-% % Plot results
-% plot(scene(:,1), scene(:,2), 'o')
-% hold on
-% plot(model(:,1), model(:,2), 'o')
-% for i = 1:numel(indices)
-%     plot([scene(indices(i),1), model(i,1)], [scene(indices(i),2), model(i,2)], 'k-')
-%     plot([scene(indices(i),1), model_current(i,1)], [scene(indices(i),2), model_current(i,2)], 'k-')
-% end
-% plot(model_current(:,1), model_current(:,2), 'x')
-% hold off
 
 end
 
 % Custom linear regression with weight matrix and lambda constraint
 function B = linreg(X, Y, W, l)
-
 if ~exist('W', 'var')
     W = eye(size(X,1));
 end
@@ -121,28 +149,25 @@ if ~exist('l', 'var')
     l = 0;
 end
 B = inv(X.'*W*X + l*eye(3))*X.'*W*Y;
-
 end
 
 % Append a column of ones to the input matrix if it is not already Nx3
 function mat = append_ones(mat)
-
 if size(mat, 2) < 3
     mat = [mat, ones(size(mat, 1),1)];
 end
-
 end
 
 % Calculate a basic correlation coefficient between arrays
 function r = corr(a, b)
-
     r = sum(a.*b)/sqrt(sum(a.^2)*sum(b.^2));
 %     r = mean(abs(a-b)/(a+b));
-
 end
 
-function s = sim(a, b)
+% function s = sim(a, b)
+%     s = dot(a,b)/(norm(a)*norm(b));  
+% end
 
-    s = dot(a,b)/(norm(a)*norm(b));
-    
+function mat = scale(mat)
+    mat = mat/max(mat,[],'all');
 end

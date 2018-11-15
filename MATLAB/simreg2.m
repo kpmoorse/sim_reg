@@ -1,6 +1,24 @@
-function t_est = simreg2(scene, scn_im, model, mdl_im, num_iters, l)
+function [t_est, indices] = simreg2(scene, scn_im, model, mdl_im, num_iters, varargin)
 %SIMREG2 Register model to scene, weighting correspondence by image similarity
 %   Detailed explanation goes here
+
+% Set default varargin values
+l = 0;
+diagplot = true;
+
+% Loop over varargin elements
+while ~isempty(varargin)
+    switch lower(varargin{1})
+
+        case 'lambda'
+            l = varargin{2};
+        case 'diagnostic'
+            diagplot = varargin{2};
+
+    end
+
+    varargin(1:2) = [];
+end
 
 % Ensure proper point cloud formatting
 scene = append_ones(scene);
@@ -13,7 +31,7 @@ if ~exist('l', 'var')
     l = 0;
 end
 
-% Precalculate Hu moments for each point
+% Precalculate Hu moment vectors for each point
 scn_hu = zeros(size(scene,1),7);
 mdl_hu = zeros(size(model,1),7);
 for i=1:size(scene,1)
@@ -42,7 +60,7 @@ for i = 1:num_iters
         k = indices(j);
         a = scn_hu(k,:);
         b = mdl_hu(j,:);
-        W(j,j) = sim(a, b);
+        W(j,j) = corr(a, b);
     end
     
     % Iterate transform by linear regression
@@ -58,8 +76,14 @@ for i = 1:num_iters
 
 end
 
+if ~diagplot
+    return
+end
+
 % Display diagnostic plots for each neuron
 T = projective2d(t_est);
+rad = ceil(size(submask(scn_im, scene(1, 1:2)), 1)/2);
+
 for i=1:numel(model)
     
     j = indices(i);
@@ -78,13 +102,13 @@ for i=1:numel(model)
     subplot(2,4,3)
     imshow(submask(scn_im, scene(j, 1:2)),[0,500])
     hold on
-    plot(21, 21, 'g.', 'MarkerSize', 15)
+    plot(rad, rad, 'g.', 'MarkerSize', 15)
     title(sprintf('Scene[%i] (Anatomical)', i))
     
     subplot(2,4,4)
     imshow(submask(mdl_im, model(i, 1:2)),[0,500])
     hold on
-    plot(21, 21, 'r.', 'MarkerSize', 15)
+    plot(rad, rad, 'r.', 'MarkerSize', 15)
     title(sprintf('Model[%i] (Functional)', i))
     
     subplot(2,2,4)
@@ -92,22 +116,42 @@ for i=1:numel(model)
     b = mdl_hu(i, :);
     bar([a; b].')
     legend('Scene', 'Model')
-    title(sprintf("Hu Moments (sim = %.04f)", sim(a, b)))
+    title(sprintf("Hu Moments (corr = %.04f)", corr(a, b)))
     
-    pause
+    flag = true;
+    while flag
+        uin = input(sprintf('[#%03i] [Y:Accept] / N:Reject / A:Adjust: ', i), 's');
+        switch lower(uin)
+            case 'y'
+                flag = false;
+            case 'n'
+                indices(i) = 0;
+                flag = false;
+            case 'a'
+                subplot(2,4,3)
+                pts = scene(vecnorm(scene - scene(j,:),2, 2)<rad/2, 1:2);
+                pts = pts - scene(j,1:2) + [rad rad];
+                plot(pts(:,1), pts(:,2), 'go', 'MarkerSize', 10)
+                
+                gin = myginput(1, 'arrow');
+                [~,adj_ix] = min(vecnorm(pts-gin, 2, 2));
+                adj_pt = pts(adj_ix, :);
+                adj_pt = adj_pt + scene(j,1:2) - [rad rad];
+                scene_ix = find(and(scene(:,1)==adj_pt(1), scene(:,2)==adj_pt(2)));
+                
+                indices(i) = scene_ix;
+                j = indices(i);
+                
+                subplot(2,4,3)
+                imshow(submask(scn_im, scene(j, 1:2)),[0,500])
+                hold on
+                plot(rad, rad, 'g.', 'MarkerSize', 15)
+                title(sprintf('Scene[%i] (Anatomical)', i))
+            otherwise
+                flag = false;
+        end
+    end
 end
-
-
-% % Plot results
-% plot(scene(:,1), scene(:,2), 'o')
-% hold on
-% plot(model(:,1), model(:,2), 'o')
-% for i = 1:numel(indices)
-%     plot([scene(indices(i),1), model(i,1)], [scene(indices(i),2), model(i,2)], 'k-')
-%     plot([scene(indices(i),1), model_current(i,1)], [scene(indices(i),2), model_current(i,2)], 'k-')
-% end
-% plot(model_current(:,1), model_current(:,2), 'x')
-% hold off
 
 end
 
@@ -135,9 +179,10 @@ function r = corr(a, b)
 %     r = mean(abs(a-b)/(a+b));
 end
 
-function s = sim(a, b)
-    s = dot(a,b)/(norm(a)*norm(b));  
-end
+% function s = sim(a, b)
+%     s = dot(a,b)/(norm(a)*norm(b));  
+% end
+
 function mat = scale(mat)
     mat = mat/max(mat,[],'all');
 end
