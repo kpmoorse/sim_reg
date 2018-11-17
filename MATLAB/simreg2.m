@@ -21,7 +21,6 @@ while ~isempty(varargin)
             t_init = varargin{2};
             assert(and(isnumeric(t_init), all(size(t_init)==[3,3])), ...
                 "Initial guess must be a 3x3 numeric array")
-
     end
 
     varargin(1:2) = [];
@@ -38,20 +37,21 @@ if ~exist('l', 'var')
     l = 0;
 end
 
-% Precalculate Hu moment vectors for each point
-scn_hu = zeros(size(scene,1),7);
-mdl_hu = zeros(size(model,1),7);
+% Precalculate moment vectors for each point
+order = 5; % Maximum order for moment calculation
+scn_mmnt = zeros(size(scene,1),12);
+mdl_mmnt = zeros(size(model,1),12);
 for i=1:size(scene,1)
-    scn_hu(i,:) = hu(submask(scn_im, scene(i, 1:2))).';
+    scn_mmnt(i,:) = abs(zern2(submask(scn_im, scene(i, 1:2)),order)).';
 end
 for i=1:size(model,1)
-    mdl_hu(i,:) = hu(submask(mdl_im, model(i, 1:2))).';
+    mdl_mmnt(i,:) = abs(zern2(submask(mdl_im, model(i, 1:2)),order)).';
 end
 
-% Normalize Hu moment magnitudes
-mean_hu = mean([scn_hu;mdl_hu]);
-scn_hu = scn_hu./mean_hu;
-mdl_hu = mdl_hu./mean_hu;
+% Normalize moment magnitudes
+mean_mmnt = mean([scn_mmnt;mdl_mmnt]);
+scn_mmnt = scn_mmnt./mean_mmnt;
+mdl_mmnt = mdl_mmnt./mean_mmnt;
 
 % Initialize transform estimate as identity matrix
 t_est = t_init;
@@ -65,8 +65,8 @@ for i = 1:num_iters
     % Generate weights using image similarity via Hu moments
     for j=1:size(model, 1)
         k = indices(j);
-        a = scn_hu(k,:);
-        b = mdl_hu(j,:);
+        a = scn_mmnt(k,:);
+        b = mdl_mmnt(j,:);
         W(j,j) = corr(a, b);
     end
     
@@ -91,71 +91,108 @@ end
 T = projective2d(t_est);
 rad = ceil(size(submask(scn_im, scene(1, 1:2)), 1)/2);
 
-for i=1:numel(model)
+disp('Check registration results')
+disp('[Y:Accept] / N:Reject / A:Adjust / X:Exit / #:GoTo')
+
+% Loop through registration results
+i = 1;
+while i<=size(model,1)
     
     j = indices(i);
     
+    % Plot overlaid scene and transformed model images
     subplot(1,2,1)
     imshow(imadjust(imfuse(imwarp(scale(mdl_im), T), scale(scn_im), 'falsecolor', 'scaling', 'joint', ...
         'ColorChannels',[1,2,0] ), [0 0 0; 0.5 0.5 0.5])) % mdl=red, scn=grn
     hold on
-    plot([scene(j,1), model(i,1)], [scene(j,2), model(i,2)], '.-w')
+    plot([scene(j,1), model(i,1)], [scene(j,2), model(i,2)], 'o-w')
     if l==0
         title("Hu-Sim ICP (\lambda=0)")
     else
         title(sprintf("Hu-Sim ICP (\\lambda=10^{%.1f})",round(log(l)/log(10))))
     end
     
+    % Plot model submask
     subplot(2,4,3)
-    imshow(submask(scn_im, scene(j, 1:2)),[0,500])
-    hold on
-    plot(rad, rad, 'g.', 'MarkerSize', 15)
-    title(sprintf('Scene[%i] (Anatomical)', i))
-    
-    subplot(2,4,4)
     imshow(submask(mdl_im, model(i, 1:2)),[0,500])
     hold on
     plot(rad, rad, 'r.', 'MarkerSize', 15)
     title(sprintf('Model[%i] (Functional)', i))
     
+    % Plot scene submask
+    subplot(2,4,4)
+    imshow(submask(scn_im, scene(j, 1:2)),[0,500])
+    hold on
+    plot(rad, rad, 'g.', 'MarkerSize', 15)
+    title(sprintf('Scene[%i] (Anatomical)', j))
+    
+    % Plot comparative Hu moments
     subplot(2,2,4)
-    a = scn_hu(j, :);
-    b = mdl_hu(i, :);
+    a = scn_mmnt(j, :);
+    b = mdl_mmnt(i, :);
     bar([a; b].')
     legend('Scene', 'Model')
     title(sprintf("Hu Moments (corr = %.04f)", corr(a, b)))
     
     flag = true;
     while flag
-        uin = input(sprintf('[#%03i] [Y:Accept] / N:Reject / A:Adjust: ', i), 's');
-        switch lower(uin)
-            case 'y'
+        % Prompt user evaluation of results
+        uin = input(sprintf('(#%03i): ', i), 's');
+        switch true
+            % On "Accept," move to next point
+            case isempty(uin) || strcmpi(uin, 'y')
                 flag = false;
-            case 'n'
+                i = i + 1;
+            % On "Reject," delete correspondance and move to next point 
+            case strcmpi(uin, 'n')
                 indices(i) = 0;
                 flag = false;
-            case 'a'
-                subplot(2,4,3)
+                i = i + 1;
+            % On "Adjust," launch adjustment GUI
+            case strcmpi(uin, 'a')
+                % Display nearby scene points
+                subplot(2,4,4)
                 pts = scene(vecnorm(scene - scene(j,:),2, 2)<rad/2, 1:2);
                 pts = pts - scene(j,1:2) + [rad rad];
                 plot(pts(:,1), pts(:,2), 'go', 'MarkerSize', 10)
                 
-                gin = myginput(1, 'arrow');
-                [~,adj_ix] = min(vecnorm(pts-gin, 2, 2));
-                adj_pt = pts(adj_ix, :);
+                % Prompt user selection of scene point
+                gin_accept = false;
+                while ~gin_accept
+                    gin = myginput(1, 'arrow');
+                    [~,adj_ix] = min(vecnorm(pts-gin, 2, 2));
+                    adj_pt = pts(adj_ix, :);
+                    % Only accept nearby selection clicks
+                    if norm(gin-adj_pt) <= 2
+                        gin_accept = true;
+                    end
+                end
                 adj_pt = adj_pt + scene(j,1:2) - [rad rad];
                 scene_ix = find(and(scene(:,1)==adj_pt(1), scene(:,2)==adj_pt(2)));
                 
+                % Update correspondance
                 indices(i) = scene_ix;
                 j = indices(i);
                 
-                subplot(2,4,3)
+                % Update scene plot
+                subplot(2,4,4)
                 imshow(submask(scn_im, scene(j, 1:2)),[0,500])
                 hold on
                 plot(rad, rad, 'g.', 'MarkerSize', 15)
                 title(sprintf('Scene[%i] (Anatomical)', i))
-            otherwise
+            case strcmp(uin, 'x')
                 flag = false;
+                i = size(model,1) + 1;
+            case ~isempty(str2double(uin)) && ~isnan(str2double(uin))
+                if any(str2double(uin)==1:size(model,1))
+                    flag = false;
+                    i = str2double(uin);
+                else
+                    warning('Numerical input is outside model index range (1:%i)', size(model,1))
+                end
+            otherwise
+                warning('Input not recognized')
+
         end
     end
 end
@@ -183,12 +220,7 @@ end
 % Calculate a basic correlation coefficient between arrays
 function r = corr(a, b)
     r = sum(a.*b)/sqrt(sum(a.^2)*sum(b.^2));
-%     r = mean(abs(a-b)/(a+b));
 end
-
-% function s = sim(a, b)
-%     s = dot(a,b)/(norm(a)*norm(b));  
-% end
 
 function mat = scale(mat)
     mat = mat/max(mat,[],'all');
