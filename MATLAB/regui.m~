@@ -1,9 +1,0 @@
-function [outputArg1,outputArg2] = regui(inputArg1,inputArg2)
-%REGUI Select files via UI and call registration function
-%   Detailed explanation goes here
-
-lmat = uigetfile({'*.tif';'*.tiff'}, "Select label matrix (anatomical)");
-lmat = uigetfile({'*.tif';'*.tiff'}, "Select label matrix (anatomical)");
-
-end
-

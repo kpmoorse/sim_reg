@@ -1,4 +1,4 @@
-function indices = regui(num_iters)
+function [indices, corrlist] = regui(num_iters)
 %REGUI Select files via UI and call registration function
 %   Detailed explanation goes here
 
@@ -8,10 +8,16 @@ end
 
 z = 3;
 
+% Suppress "Error updating Button" warning
+warning('off', 'MATLAB:handle_graphics:exceptions:SceneNode');
+
 % Select data files via user input
-lmat = uigetfile({'*.tif';'*.tiff'}, "Select label matrix (anatomical)");
-img = uigetfile({'*.tif';'*.tiff'}, "Select image stack (anatomical)");
-cnmf = uigetfile({'*.mat'}, "Select CNMF data (functional)");
+[lmat, path] = uigetfile('*.tif;*.tiff', "Select label matrix (anatomical)");
+lmat = fullfile(path, lmat);
+[img, path] = uigetfile(fullfile(path, '*.tif;*.tiff'), "Select image stack (anatomical)");
+img = fullfile(path, img);
+[cnmf, path] = uigetfile(fullfile(path, '*.mat'), "Select CNMF data (functional)");
+cnmf = fullfile(path, cnmf);
 
 % Read data files
 lmat = bigread2(lmat);
@@ -28,7 +34,7 @@ model = model(:, 1:2);
 mdl_im = mean(CNM.Y, 3);
 
 % Run similarity registration
-[~, indices] = simreg2(scene, scn_im, model, mdl_im, num_iters, 'moment', 'zern2');
+[~, indices, corrlist] = sim_icp2(scene, scn_im, model, mdl_im, num_iters);
 
 end
 

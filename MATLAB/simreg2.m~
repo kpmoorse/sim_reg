@@ -21,7 +21,6 @@ while ~isempty(varargin)
             t_init = varargin{2};
             assert(and(isnumeric(t_init), all(size(t_init)==[3,3])), ...
                 "Initial guess must be a 3x3 numeric array")
-
     end
 
     varargin(1:2) = [];
@@ -38,20 +37,30 @@ if ~exist('l', 'var')
     l = 0;
 end
 
-% Precalculate Hu moment vectors for each point
-scn_hu = zeros(size(scene,1),7);
-mdl_hu = zeros(size(model,1),7);
-for i=1:size(scene,1)
-    scn_hu(i,:) = hu(submask(scn_im, scene(i, 1:2))).';
-end
-for i=1:size(model,1)
-    mdl_hu(i,:) = hu(submask(mdl_im, model(i, 1:2))).';
+% Precalculate moment vectors for each point
+order = 5; % Maximum order for moment calculation
+nm = []; % List of subscripts
+for n=0:order
+    for m=0:n
+        if mod(n-abs(m), 2)==0
+            nm = [nm; [num2str(n),num2str(m)]];
+        end
+    end
 end
 
-% Normalize Hu moment magnitudes
-mean_hu = mean([scn_hu;mdl_hu]);
-scn_hu = scn_hu./mean_hu;
-mdl_hu = mdl_hu./mean_hu;
+scn_mmnt = zeros(size(scene,1),12);
+mdl_mmnt = zeros(size(model,1),12);
+for i=1:size(scene,1)
+    scn_mmnt(i,:) = abs(zern2(submask(scn_im, scene(i, 1:2)),order)).';
+end
+for i=1:size(model,1)
+    mdl_mmnt(i,:) = abs(zern2(submask(mdl_im, model(i, 1:2)),order)).';
+end
+
+% Normalize moment magnitudes
+mean_mmnt = mean([scn_mmnt;mdl_mmnt]);
+scn_mmnt = scn_mmnt./mean_mmnt;
+mdl_mmnt = mdl_mmnt./mean_mmnt;
 
 % Initialize transform estimate as identity matrix
 t_est = t_init;
@@ -65,8 +74,8 @@ for i = 1:num_iters
     % Generate weights using image similarity via Hu moments
     for j=1:size(model, 1)
         k = indices(j);
-        a = scn_hu(k,:);
-        b = mdl_hu(j,:);
+        a = scn_mmnt(k,:);
+        b = mdl_mmnt(j,:);
         W(j,j) = corr(a, b);
     end
     
@@ -92,7 +101,7 @@ T = projective2d(t_est);
 rad = ceil(size(submask(scn_im, scene(1, 1:2)), 1)/2);
 
 disp('Check registration results')
-disp('[Y:Accept] / N:Reject / A:Adjust / #:GoTo')
+disp('[Y:Accept] / N:Reject / A:Adjust / X:Exit / #:GoTo')
 
 % Loop through registration results
 i = 1;
@@ -105,11 +114,11 @@ while i<=size(model,1)
     imshow(imadjust(imfuse(imwarp(scale(mdl_im), T), scale(scn_im), 'falsecolor', 'scaling', 'joint', ...
         'ColorChannels',[1,2,0] ), [0 0 0; 0.5 0.5 0.5])) % mdl=red, scn=grn
     hold on
-    plot([scene(j,1), model(i,1)], [scene(j,2), model(i,2)], '-w')
+    plot([scene(j,1), model(i,1)], [scene(j,2), model(i,2)], 'o-w')
     if l==0
         title("Hu-Sim ICP (\lambda=0)")
     else
-        title(sprintf("Hu-Sim ICP (\\lambda=10^{%.1f})",round(log(l)/log(10))))
+        title(sprintf("Similarity-Weighted ICP (\\lambda=10^{%.1f})",round(log(l)/log(10))))
     end
     
     % Plot model submask
@@ -128,11 +137,12 @@ while i<=size(model,1)
     
     % Plot comparative Hu moments
     subplot(2,2,4)
-    a = scn_hu(j, :);
-    b = mdl_hu(i, :);
-    bar([a; b].')
+    a = scn_mmnt(j, :);
+    b = mdl_mmnt(i, :);
+    bar([normalize(a); normab].')
     legend('Scene', 'Model')
-    title(sprintf("Hu Moments (corr = %.04f)", corr(a, b)))
+    title(sprintf("Zernike Moments (corr = %.04f)", corr(a, b)))
+    set(gca, 'xtick', [1:numel(nm)], 'xticklabel', nm)
     
     flag = true;
     while flag
@@ -180,6 +190,9 @@ while i<=size(model,1)
                 hold on
                 plot(rad, rad, 'g.', 'MarkerSize', 15)
                 title(sprintf('Scene[%i] (Anatomical)', i))
+            case strcmp(uin, 'x')
+                flag = false;
+                i = size(model,1) + 1;
             case ~isempty(str2double(uin)) && ~isnan(str2double(uin))
                 if any(str2double(uin)==1:size(model,1))
                     flag = false;
@@ -219,7 +232,9 @@ function r = corr(a, b)
     r = sum(a.*b)/sqrt(sum(a.^2)*sum(b.^2));
 end
 
-
 function mat = scale(mat)
     mat = mat/max(mat,[],'all');
+end
+function mat = normalize(mat)
+    mat = mat/sum(mat, 'all');
 end

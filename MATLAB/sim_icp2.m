@@ -1,4 +1,4 @@
-function [t_est, indices] = simreg2(scene, scn_im, model, mdl_im, num_iters, varargin)
+function [t_est, indices, corrlist] = simreg2(scene, scn_im, model, mdl_im, num_iters, varargin)
 %SIMREG2 Register model to scene, weighting correspondence by image similarity
 %   Detailed explanation goes here
 
@@ -39,6 +39,15 @@ end
 
 % Precalculate moment vectors for each point
 order = 5; % Maximum order for moment calculation
+nm = []; % List of subscripts
+for n=0:order
+    for m=0:n
+        if mod(n-abs(m), 2)==0
+            nm = [nm; [num2str(n),num2str(m)]];
+        end
+    end
+end
+
 scn_mmnt = zeros(size(scene,1),12);
 mdl_mmnt = zeros(size(model,1),12);
 for i=1:size(scene,1)
@@ -74,7 +83,7 @@ for i = 1:num_iters
     t_est_new = t_est*linreg(model_current, scene(indices, :), W, l);
 
     % Break if there is no change in t_est
-    if ~all(t_est_new == t_est, 'all')
+    if ~all(t_est_new(:) == t_est(:))
         t_est = t_est_new;
     else
         model_current = model*t_est;
@@ -107,9 +116,9 @@ while i<=size(model,1)
     hold on
     plot([scene(j,1), model(i,1)], [scene(j,2), model(i,2)], 'o-w')
     if l==0
-        title("Hu-Sim ICP (\lambda=0)")
+        title("Similarity-Weighted ICP (\lambda=0)")
     else
-        title(sprintf("Hu-Sim ICP (\\lambda=10^{%.1f})",round(log(l)/log(10))))
+        title(sprintf("Similarity-Weighted ICP (\\lambda=10^{%.1f})",round(log(l)/log(10))))
     end
     
     % Plot model submask
@@ -130,9 +139,10 @@ while i<=size(model,1)
     subplot(2,2,4)
     a = scn_mmnt(j, :);
     b = mdl_mmnt(i, :);
-    bar([a; b].')
+    bar([normalize(a); normalize(b)].')
     legend('Scene', 'Model')
-    title(sprintf("Hu Moments (corr = %.04f)", corr(a, b)))
+    title(sprintf("Normalized Zernike Moments (corr = %.04f)", corr(a, b)))
+    set(gca, 'xtick', [1:numel(nm)], 'xticklabel', nm)
     
     flag = true;
     while flag
@@ -160,6 +170,9 @@ while i<=size(model,1)
                 gin_accept = false;
                 while ~gin_accept
                     gin = myginput(1, 'arrow');
+                    if isempty(gin)
+                        gin = [rad, rad];
+                    end
                     [~,adj_ix] = min(vecnorm(pts-gin, 2, 2));
                     adj_pt = pts(adj_ix, :);
                     % Only accept nearby selection clicks
@@ -197,6 +210,11 @@ while i<=size(model,1)
     end
 end
 
+corrlist = zeros(numel(indices),1);
+for i=1:numel(indices)
+    corrlist(i) = corr(mdl_mmnt(i,:), scn_mmnt(indices(i),:));
+end
+
 end
 
 % Custom linear regression with weight matrix and lambda constraint
@@ -223,5 +241,8 @@ function r = corr(a, b)
 end
 
 function mat = scale(mat)
-    mat = mat/max(mat,[],'all');
+    mat = mat/max(mat(:));
+end
+function mat = normalize(mat)
+    mat = mat/sum(mat(:));
 end

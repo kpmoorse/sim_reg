@@ -30,17 +30,32 @@ for n=0:order
         if mod(n-abs(m), 2)==0
             % Append Zernike moments and n,m values
             Anm = A(n,m,img);
-            switch outform
-                case 'complex'
-                    Z = [Z; Anm];
-                case 'mag-phase'
-                    Z = [Z; [abs(Anm), angle(Anm)]];
-            end
+            Z = [Z; Anm];
+            
             nm = [nm; [n,m]];
         end
     end
 end
 
+% recon = double(img*0);
+% y = ctrrng(size(img, 1));
+% x = ctrrng(size(img, 2));
+% [X,Y] = ndgrid(x,y);
+% r = sqrt(X.^2+Y.^2);
+% th = mod(atan2(Y,X),2*pi);
+% for i=size(Z,1)
+%     recon = recon + Z(i) .* V(nm(i,1),nm(i,2),r,th);
+% end
+% subplot(1,2,1)
+% imshow(img, [])
+% subplot(1,2,2)
+% imshow(abs(recon), [])
+
+switch outform
+%     case 'complex'
+    case 'mag-phase'
+        Z = [abs(Z), angle(Z)];
+end
 end
 
 % Calculate Zernike moment Anm (dependent on Vnm)
@@ -52,7 +67,8 @@ x = ctrrng(size(img, 2));
 r = sqrt(X.^2+Y.^2);
 th = mod(atan2(Y,X),2*pi);
 
-Anm = (n+1)/pi * sum(double(img).*conj(V(n,m,r,th)), 'all');
+sumterms = double(img).*conj(V(n,m,r,th));
+Anm = (n+1)/pi * sum(sumterms(:));
 
 end
 
