@@ -1,11 +1,9 @@
-function SR = simreg2(scene, scn_im, model, mdl_im, num_iters, varargin)
+function [t_est, indices, corrlist] = simreg2(scene, scn_im, model, mdl_im, num_iters, varargin)
 %SIMREG2 Register model to scene, weighting correspondence by image similarity
 %   Detailed explanation goes here
 
-SR = struct('scp', scene, ...
-    'sci', scn_im, ...
-    'mdp', model, ...
-    'mdi', mdl_im);
+
+
 
 % Set default varargin values
 l = 0;
@@ -101,18 +99,6 @@ if ~diagplot
     return
 end
 
-% Save initial results to struct
-SR.ixi = indices;
-corrlist = zeros(numel(indices),1);
-for i=1:numel(indices)
-    if indices(i) > 0
-        corrlist(i) = corr(mdl_mmnt(i,:), scn_mmnt(indices(i),:));
-    else
-        corrlist(i) = 0;
-    end
-end
-SR.cli = corrlist;
-
 % Display diagnostic plots for each neuron
 T = projective2d(t_est);
 rad = ceil(size(submask(scn_im, scene(1, 1:2)), 1)/2);
@@ -125,10 +111,6 @@ i = 1;
 while i<=size(model,1)
     
     j = indices(i);
-    
-    if i>1
-        clf
-    end
     
     % Plot overlaid scene and transformed model images
     subplot(1,2,1)
@@ -163,7 +145,7 @@ while i<=size(model,1)
     bar([normalize(a); normalize(b)].')
     legend('Scene', 'Model')
     title(sprintf("Normalized Zernike Moments (corr = %.04f)", corr(a, b)))
-    set(gca, 'xtick', 1:numel(nm), 'xticklabel', nm)
+    set(gca, 'xtick', [1:numel(nm)], 'xticklabel', nm)
     
     flag = true;
     while flag
@@ -208,20 +190,12 @@ while i<=size(model,1)
                 indices(i) = scene_ix;
                 j = indices(i);
                 
-                % Update scene and correlation plots
+                % Update scene plot
                 subplot(2,4,4)
                 imshow(submask(scn_im, scene(j, 1:2)),[0,500])
                 hold on
                 plot(rad, rad, 'g.', 'MarkerSize', 15)
                 title(sprintf('Scene[%i] (Anatomical)', i))
-
-                subplot(2,2,4)
-                a = scn_mmnt(j, :);
-                b = mdl_mmnt(i, :);
-                bar([normalize(a); normalize(b)].')
-                legend('Scene', 'Model')
-                title(sprintf("Normalized Zernike Moments (corr = %.04f)", corr(a, b)))
-                set(gca, 'xtick', 1:numel(nm), 'xticklabel', nm)
             case strcmp(uin, 'x')
                 flag = false;
                 i = size(model,1) + 1;
@@ -239,18 +213,10 @@ while i<=size(model,1)
     end
 end
 
-% Save final results to struct
-SR.te = t_est;
-SR.ix = indices;
 corrlist = zeros(numel(indices),1);
 for i=1:numel(indices)
-    if indices(i) > 0
-        corrlist(i) = corr(mdl_mmnt(i,:), scn_mmnt(indices(i),:));
-    else
-        corrlist(i) = 0;
-    end
+    corrlist(i) = corr(mdl_mmnt(i,:), scn_mmnt(indices(i),:));
 end
-SR.cl = corrlist;
 
 end
 

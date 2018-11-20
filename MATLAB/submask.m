@@ -25,7 +25,9 @@ if ~exist('mask', 'var')
     mask = double(sqrt(X.^2+Y.^2)<=r);
 end
 
-sub = double(img(round(ctr(2))+(-r:r), round(ctr(1))+(-r:r)));
+img_pad = padarray(img, [r,r], 0, 'both');
+
+sub = double(img_pad(round(ctr(2))+r+(-r:r), round(ctr(1))+r+(-r:r)));
 sub = sub.*mask;
 
 end

@@ -1,4 +1,4 @@
-function [indices, corrlist] = regui(num_iters)
+function sr = regui(num_iters)
 %REGUI Select files via UI and call registration function
 %   Detailed explanation goes here
 
@@ -22,7 +22,10 @@ cnmf = fullfile(path, cnmf);
 % Read data files
 lmat = bigread2(lmat);
 img = bigread2(img);
-load(cnmf, 'CNM');
+
+S = whos('-file',fullfile(path,'002_z03_cnmf.mat'));
+nam = cell2mat(regexp(cell2mat({S.name}),'(?i)cnmf?','match'));
+load(cnmf, nam);
 
 % Reformat data for function input
 scene = exctrs2(lmat(:,:,z));
@@ -34,7 +37,7 @@ model = model(:, 1:2);
 mdl_im = mean(CNM.Y, 3);
 
 % Run similarity registration
-[~, indices, corrlist] = sim_icp2(scene, scn_im, model, mdl_im, num_iters);
+sr = sim_icp2(scene, scn_im, model, mdl_im, num_iters);
 
 end
 

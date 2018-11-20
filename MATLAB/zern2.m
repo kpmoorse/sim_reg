@@ -1,5 +1,5 @@
 function [Z, nm] = zern2(img, order, varargin)
-%ZERNIKE2 Calculate rotation-invariant Zernike moments for an input image
+%ZERN2 Calculate rotation-invariant Zernike moments for an input image
 %
 %   Implementation of methods from the following paper:
 %   A. Khotanzad and Y. H. Hong, "Invariant Image Recognition by Zernike
@@ -31,28 +31,12 @@ for n=0:order
             % Append Zernike moments and n,m values
             Anm = A(n,m,img);
             Z = [Z; Anm];
-            
             nm = [nm; [n,m]];
         end
     end
 end
 
-% recon = double(img*0);
-% y = ctrrng(size(img, 1));
-% x = ctrrng(size(img, 2));
-% [X,Y] = ndgrid(x,y);
-% r = sqrt(X.^2+Y.^2);
-% th = mod(atan2(Y,X),2*pi);
-% for i=size(Z,1)
-%     recon = recon + Z(i) .* V(nm(i,1),nm(i,2),r,th);
-% end
-% subplot(1,2,1)
-% imshow(img, [])
-% subplot(1,2,2)
-% imshow(abs(recon), [])
-
 switch outform
-%     case 'complex'
     case 'mag-phase'
         Z = [abs(Z), angle(Z)];
 end
@@ -76,7 +60,7 @@ end
 function Vnm = V(n,m,r,th)
 
 Rnm = R(n,m,r);
-Vnm = Rnm * exp(1j * m * th);
+Vnm = Rnm .* exp(1j * m * th);
 
 end
 
@@ -90,6 +74,7 @@ for s = ss
             ff(n-s) / (ff(s) .* ff((n+abs(m))/2 - s) .* ff((n-abs(m))/2 - s)) .* ...
             r.^(n - 2*s);
 end
+Rnm(r>1) = 0;
 
 end
 
