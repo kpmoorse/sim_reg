@@ -158,10 +158,12 @@ while i<=size(model,1)
     
     % Plot comparative Hu moments
     subplot(2,2,4)
-    a = scn_mmnt(j, :);
-    b = mdl_mmnt(i, :);
-    bar([normalize(a); normalize(b)].')
-    legend('Scene', 'Model')
+    a = mdl_mmnt(i, :);
+    b = scn_mmnt(j, :);
+    barplot = bar([normalize(a); normalize(b)].');
+    barplot(1).FaceColor = 'r';
+    barplot(2).FaceColor = 'g';
+    % legend('Scene', 'Model')
     title(sprintf("Normalized Zernike Moments (corr = %.04f)", corr(a, b)))
     set(gca, 'xtick', 1:numel(nm), 'xticklabel', nm)
     
@@ -216,10 +218,12 @@ while i<=size(model,1)
                 title(sprintf('Scene[%i] (Anatomical)', i))
 
                 subplot(2,2,4)
-                a = scn_mmnt(j, :);
-                b = mdl_mmnt(i, :);
-                bar([normalize(a); normalize(b)].')
-                legend('Scene', 'Model')
+                a = mdl_mmnt(i, :);
+                b = scn_mmnt(j, :);
+                barplot = bar([normalize(a); normalize(b)].');
+                barplot(1).FaceColor = 'r';
+                barplot(2).FaceColor = 'g';
+                % legend('Scene', 'Model')
                 title(sprintf("Normalized Zernike Moments (corr = %.04f)", corr(a, b)))
                 set(gca, 'xtick', 1:numel(nm), 'xticklabel', nm)
             case strcmp(uin, 'x')
@@ -239,7 +243,7 @@ while i<=size(model,1)
     end
 end
 
-% Save final results to struct
+% Save final results
 SR.te = t_est;
 SR.ix = indices;
 corrlist = zeros(numel(indices),1);

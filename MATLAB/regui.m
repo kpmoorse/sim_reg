@@ -1,4 +1,4 @@
-function sr = regui(num_iters)
+function SR = regui(num_iters, filename)
 %REGUI Select files via UI and call registration function
 %   Detailed explanation goes here
 
@@ -19,6 +19,10 @@ img = fullfile(path, img);
 [cnmf, path] = uigetfile(fullfile(path, '*.mat'), "Select CNMF data (functional)");
 cnmf = fullfile(path, cnmf);
 
+if ~exist('filename', 'var')
+    filename = 'test.csv';
+end
+
 % Read data files
 lmat = bigread2(lmat);
 img = bigread2(img);
@@ -37,7 +41,8 @@ model = model(:, 1:2);
 mdl_im = mean(CNM.Y, 3);
 
 % Run similarity registration
-sr = sim_icp2(scene, scn_im, model, mdl_im, num_iters);
+SR = sim_icp2(scene, scn_im, model, mdl_im, num_iters);
+savedat(SR, filename)
 
 end
 
