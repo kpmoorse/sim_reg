@@ -1,4 +1,4 @@
-function SR = simreg2(scene, scn_im, model, mdl_im, num_iters, varargin)
+function SR = sim_icp2(scene, scn_im, model, mdl_im, num_iters, varargin)
 %SIMREG2 Register model to scene, weighting correspondence by image similarity
 %   Detailed explanation goes here
 
@@ -11,7 +11,9 @@ SR = struct('scp', scene, ...
 l = 0;
 diagplot = true;
 t_init = eye(3);
+trim = 1.0;
 
+varargin = varargin{1};
 % Loop over varargin elements
 while ~isempty(varargin)
     switch lower(varargin{1})
@@ -26,6 +28,8 @@ while ~isempty(varargin)
             t_init = varargin{2};
             assert(and(isnumeric(t_init), all(size(t_init)==[3,3])), ...
                 "Initial guess must be a 3x3 numeric array")
+        case 'trim'
+            trim = varargin{2};
     end
 
     varargin(1:2) = [];
@@ -44,7 +48,7 @@ end
 
 % Precalculate moment vectors for each point
 order = 5; % Maximum order for moment calculation
-nm = []; % List of subscripts
+nm = string(); % List of subscripts
 for n=0:order
     for m=0:n
         if mod(n-abs(m), 2)==0
@@ -52,9 +56,10 @@ for n=0:order
         end
     end
 end
+nm = nm(2:end);
 
-scn_mmnt = zeros(size(scene,1),12);
-mdl_mmnt = zeros(size(model,1),12);
+scn_mmnt = zeros(size(scene,1),numel(nm));
+mdl_mmnt = zeros(size(model,1),numel(nm));
 for i=1:size(scene,1)
     scn_mmnt(i,:) = abs(zern2(submask(scn_im, scene(i, 1:2)),order)).';
 end
@@ -77,15 +82,27 @@ for i = 1:num_iters
     indices = knnsearch(scene, model_current);
 
     % Generate weights using image similarity via Hu moments
+    wvec = zeros(size(model, 1), 1);
+    dvec = wvec;
     for j=1:size(model, 1)
         k = indices(j);
         a = scn_mmnt(k,:);
         b = mdl_mmnt(j,:);
+        wvec(j) = corr(a, b);
         W(j,j) = corr(a, b);
     end
     
+    dvec = vecnorm(model_current - scene(indices, :), 2, 2);
+    [~, didx] = sort(dvec);
+    didx = didx(1:floor(end*trim));
+    
+    scn_trim = scene(indices(didx), :);
+    mdl_trim = model_current(didx, :);
+    W_trim = diag(wvec(didx));
+    
     % Iterate transform by linear regression
-    t_est_new = t_est*linreg(model_current, scene(indices, :), W, l);
+    t_est_new = t_est*linreg(mdl_trim, scn_trim, W_trim, l);
+%     t_est_new = t_est*linreg(model_current, scene(indices, :), W, l);
 
     % Break if there is no change in t_est
     if ~all(t_est_new(:) == t_est(:))
@@ -161,8 +178,8 @@ while i<=size(model,1)
     a = mdl_mmnt(i, :);
     b = scn_mmnt(j, :);
     barplot = bar([normalize(a); normalize(b)].');
-    barplot(1).FaceColor = 'r';
-    barplot(2).FaceColor = 'g';
+    barplot(1).FaceColor = [.9 .1 .1];
+    barplot(2).FaceColor = [.1 .9 .1];
     % legend('Scene', 'Model')
     title(sprintf("Normalized Zernike Moments (corr = %.04f)", corr(a, b)))
     set(gca, 'xtick', 1:numel(nm), 'xticklabel', nm)
@@ -210,22 +227,24 @@ while i<=size(model,1)
                 indices(i) = scene_ix;
                 j = indices(i);
                 
-                % Update scene and correlation plots
-                subplot(2,4,4)
-                imshow(submask(scn_im, scene(j, 1:2)),[0,500])
-                hold on
-                plot(rad, rad, 'g.', 'MarkerSize', 15)
-                title(sprintf('Scene[%i] (Anatomical)', i))
-
-                subplot(2,2,4)
-                a = mdl_mmnt(i, :);
-                b = scn_mmnt(j, :);
-                barplot = bar([normalize(a); normalize(b)].');
-                barplot(1).FaceColor = 'r';
-                barplot(2).FaceColor = 'g';
-                % legend('Scene', 'Model')
-                title(sprintf("Normalized Zernike Moments (corr = %.04f)", corr(a, b)))
-                set(gca, 'xtick', 1:numel(nm), 'xticklabel', nm)
+                flag = false;
+%                 
+%                 % Update scene and correlation plots
+%                 subplot(2,4,4)
+%                 imshow(submask(scn_im, scene(j, 1:2)),[0,500])
+%                 hold on
+%                 plot(rad, rad, 'g.', 'MarkerSize', 15)
+%                 title(sprintf('Scene[%i] (Anatomical)', i))
+% 
+%                 subplot(2,2,4)
+%                 a = mdl_mmnt(i, :);
+%                 b = scn_mmnt(j, :);
+%                 barplot = bar([normalize(a); normalize(b)].');
+%                 barplot(1).FaceColor = [.9 .1 .1];
+%                 barplot(2).FaceColor = [.1 .9 .1];
+%                 % legend('Scene', 'Model')
+%                 title(sprintf("Normalized Zernike Moments (corr = %.04f)", corr(a, b)))
+%                 set(gca, 'xtick', 1:numel(nm), 'xticklabel', nm)
             case strcmp(uin, 'x')
                 flag = false;
                 i = size(model,1) + 1;

@@ -1,5 +1,5 @@
 function savedat(SR, filename)
-%SAVEDAT Summary of this function goes here
+%SAVEDAT Save function outputs from struct to csv
 %   Detailed explanation goes here
 
 fid = fopen(filename, 'w');
