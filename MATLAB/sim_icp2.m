@@ -11,7 +11,8 @@ SR = struct('scp', scene, ...
 l = 0;
 diagplot = true;
 t_init = eye(3);
-trim = 1.0;
+trim = 0.75;
+order = 20;
 
 varargin = varargin{1};
 % Loop over varargin elements
@@ -30,6 +31,12 @@ while ~isempty(varargin)
                 "Initial guess must be a 3x3 numeric array")
         case 'trim'
             trim = varargin{2};
+            assert(and(0<trim, trim<=1), ...
+                "Least squares trim value must be on (0,1]")
+        case 'order'
+            order = varargin{2};
+            assert(and(mod(order,1)==0, order>0), ...
+                "Zernike order must be a positive integer")
     end
 
     varargin(1:2) = [];
@@ -45,9 +52,9 @@ W = eye(size(model,1));
 if ~exist('l', 'var')
     l = 0;
 end
-
+disp("Calculating Zernike moments")
 % Precalculate moment vectors for each point
-order = 5; % Maximum order for moment calculation
+% order = 25; % Maximum order for moment calculation
 nm = string(); % List of subscripts
 for n=0:order
     for m=0:n

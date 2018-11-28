@@ -1,12 +1,12 @@
-function Vnm = zernpoly2(n,m,size)
+function Vnm = zernpoly2(n,m,dim)
 %ZERNIKE2 Calculate Zernike polynomials of a given input size
 %
 %   Implementation of methods from the following paper:
 %   A. Khotanzad and Y. H. Hong, "Invariant Image Recognition by Zernike
 %       Moments" (1990)
 
-x = ctrrng(size(1));
-y = ctrrng(size(2));
+x = ctrrng(dim(1));
+y = ctrrng(dim(2));
 [X,Y] = ndgrid(x,y);
 r = sqrt(X.^2+Y.^2);
 th = mod(atan2(Y,X),2*pi);
