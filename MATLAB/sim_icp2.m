@@ -65,13 +65,14 @@ for n=0:order
 end
 nm = nm(2:end);
 
+% Pre-calculate Zernike moments for all scene and model points
 scn_mmnt = zeros(size(scene,1),numel(nm));
 mdl_mmnt = zeros(size(model,1),numel(nm));
 for i=1:size(scene,1)
-    scn_mmnt(i,:) = abs(zern2(submask(scn_im, scene(i, 1:2)),order)).';
+    scn_mmnt(i,:) = zern2(submask(scn_im, scene(i, 1:2)),order).';
 end
 for i=1:size(model,1)
-    mdl_mmnt(i,:) = abs(zern2(submask(mdl_im, model(i, 1:2)),order)).';
+    mdl_mmnt(i,:) = zern2(submask(mdl_im, model(i, 1:2)),order).';
 end
 
 % Normalize moment magnitudes
@@ -90,19 +91,20 @@ for i = 1:num_iters
 
     % Generate weights using image similarity via Hu moments
     wvec = zeros(size(model, 1), 1);
-    dvec = wvec;
     for j=1:size(model, 1)
         k = indices(j);
         a = scn_mmnt(k,:);
         b = mdl_mmnt(j,:);
-        wvec(j) = corr(a, b);
-        W(j,j) = corr(a, b);
+        wvec(j) = vcorr(a, b);
+        W(j,j) = vcorr(a, b);
     end
     
+    % Calculate error distances and trim high-error points
     dvec = vecnorm(model_current - scene(indices, :), 2, 2);
     [~, didx] = sort(dvec);
     didx = didx(1:floor(end*trim));
     
+    % Generate trimmed weight matrix
     scn_trim = scene(indices(didx), :);
     mdl_trim = model_current(didx, :);
     W_trim = diag(wvec(didx));
@@ -130,7 +132,7 @@ SR.ixi = indices;
 corrlist = zeros(numel(indices),1);
 for i=1:numel(indices)
     if indices(i) > 0
-        corrlist(i) = corr(mdl_mmnt(i,:), scn_mmnt(indices(i),:));
+        corrlist(i) = vcorr(mdl_mmnt(i,:), scn_mmnt(indices(i),:));
     else
         corrlist(i) = 0;
     end
@@ -159,7 +161,7 @@ while i<=size(model,1)
     imshow(imadjust(imfuse(imwarp(scale(mdl_im), T), scale(scn_im), 'falsecolor', 'scaling', 'joint', ...
         'ColorChannels',[1,2,0] ), [0 0 0; 0.5 0.5 0.5])) % mdl=red, scn=grn
     hold on
-    plot([scene(j,1), model(i,1)], [scene(j,2), model(i,2)], 'o-w')
+    plot([scene(j,1), model_current(i,1)], [scene(j,2), model_current(i,2)], 'o-w')
     if l==0
         title("Similarity-Weighted ICP (\lambda=0)")
     else
@@ -180,16 +182,26 @@ while i<=size(model,1)
     plot(rad, rad, 'g.', 'MarkerSize', 15)
     title(sprintf('Scene[%i] (Anatomical)', j))
     
-    % Plot comparative Hu moments
+    % Plot comparative moments
     subplot(2,2,4)
     a = mdl_mmnt(i, :);
     b = scn_mmnt(j, :);
-    barplot = bar([normalize(a); normalize(b)].');
-    barplot(1).FaceColor = [.9 .1 .1];
-    barplot(2).FaceColor = [.1 .9 .1];
+    
+    plot(real(a), real(b), '.', 'MarkerSize', 15)
+    
+    xrng = prctile(real(a), [5, 95]);
+    yrng = prctile(real(b), [5, 95]);
+    xlim(xrng + [-1,1]*0.05*diff(xrng));
+    ylim(yrng + [-1,1]*0.05*diff(yrng));
+    xlabel('Model')
+    ylabel('Scene')
+    
+%     barplot = bar([normalize(a); normalize(b)].');
+%     barplot(1).FaceColor = [.9 .1 .1];
+%     barplot(2).FaceColor = [.1 .9 .1];
     % legend('Scene', 'Model')
-    title(sprintf("Normalized Zernike Moments (corr = %.04f)", corr(a, b)))
-    set(gca, 'xtick', 1:numel(nm), 'xticklabel', nm)
+    title(sprintf("Normalized Zernike Moments (corr = %.04f)", vcorr(a, b)))
+%     set(gca, 'xtick', 1:numel(nm), 'xticklabel', nm)
     
     flag = true;
     while flag
@@ -275,7 +287,7 @@ SR.ix = indices;
 corrlist = zeros(numel(indices),1);
 for i=1:numel(indices)
     if indices(i) > 0
-        corrlist(i) = corr(mdl_mmnt(i,:), scn_mmnt(indices(i),:));
+        corrlist(i) = vcorr(mdl_mmnt(i,:), scn_mmnt(indices(i),:));
     else
         corrlist(i) = 0;
     end
@@ -303,9 +315,9 @@ end
 end
 
 % Calculate a basic correlation coefficient between arrays
-function r = corr(a, b)
-    r = sum(a.*b)/sqrt(sum(a.^2)*sum(b.^2));
-end
+% function r = corr(a, b)
+%     r = sum(a.*b)/sqrt(sum(a.^2)*sum(b.^2));
+% end
 
 function mat = scale(mat)
     mat = mat/max(mat(:));
