@@ -22,11 +22,13 @@ if ~exist('filename', 'var')
 end
 
 % Read data files
+disp("Reading TIFF files...")
 lmat = bigread2(lmat);
 img = bigread2(img);
 
 S = whos('-file', cnmf);
 nam = cell2mat(regexp(cell2mat({S.name}),'(?i)cnmf?','match'));
+disp("Loading MATLAB file...")
 CNM = load(cnmf, nam);
 CNM = CNM.(nam);
 

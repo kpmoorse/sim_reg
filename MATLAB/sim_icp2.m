@@ -52,7 +52,7 @@ W = eye(size(model,1));
 if ~exist('l', 'var')
     l = 0;
 end
-disp("Calculating Zernike moments")
+disp("Calculating Zernike moments...")
 % Precalculate moment vectors for each point
 % order = 25; % Maximum order for moment calculation
 nm = string(); % List of subscripts
@@ -187,7 +187,10 @@ while i<=size(model,1)
     a = mdl_mmnt(i, :);
     b = scn_mmnt(j, :);
     
-    plot(real(a), real(b), '.', 'MarkerSize', 15)
+%     plot(real(a), real(b), '.', 'MarkerSize', 15)
+    scatter(real(a),real(b),400,1:numel(a),'.')
+    h = colorbar;
+    ylabel(h, 'Moment index');
     
     xrng = prctile(real(a), [5, 95]);
     yrng = prctile(real(b), [5, 95]);
