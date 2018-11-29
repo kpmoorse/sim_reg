@@ -1,7 +1,7 @@
 function [Z, nm] = zern2(img, order, varargin)
 %ZERN2 Calculate rotation-invariant Zernike moments for an input image
 %
-%   Implementation of methods from the following paper:
+%   Implementation of methods from:
 %   A. Khotanzad and Y. H. Hong, "Invariant Image Recognition by Zernike
 %       Moments" (1990)
 

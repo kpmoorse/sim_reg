@@ -13,6 +13,7 @@ diagplot = true;
 t_init = eye(3);
 trim = 0.75;
 order = 20;
+simfun = @vcorr;
 
 varargin = varargin{1};
 % Loop over varargin elements
@@ -37,6 +38,10 @@ while ~isempty(varargin)
             order = varargin{2};
             assert(and(mod(order,1)==0, order>0), ...
                 "Zernike order must be a positive integer")
+        case 'simfun'
+            simfun = str2func(varargin{2});
+        otherwise
+            error("''%s'' is not a recognized input", varargin{1})
     end
 
     varargin(1:2) = [];
@@ -95,8 +100,8 @@ for i = 1:num_iters
         k = indices(j);
         a = scn_mmnt(k,:);
         b = mdl_mmnt(j,:);
-        wvec(j) = vcorr(a, b);
-        W(j,j) = vcorr(a, b);
+        wvec(j) = simfun(a, b);
+        W(j,j) = simfun(a, b);
     end
     
     % Calculate error distances and trim high-error points
@@ -132,7 +137,7 @@ SR.ixi = indices;
 corrlist = zeros(numel(indices),1);
 for i=1:numel(indices)
     if indices(i) > 0
-        corrlist(i) = vcorr(mdl_mmnt(i,:), scn_mmnt(indices(i),:));
+        corrlist(i) = simfun(mdl_mmnt(i,:), scn_mmnt(indices(i),:));
     else
         corrlist(i) = 0;
     end
@@ -203,7 +208,7 @@ while i<=size(model,1)
 %     barplot(1).FaceColor = [.9 .1 .1];
 %     barplot(2).FaceColor = [.1 .9 .1];
     % legend('Scene', 'Model')
-    title(sprintf("Normalized Zernike Moments (corr = %.04f)", vcorr(a, b)))
+    title(sprintf("Normalized Zernike Moments (sim = %.04f)", simfun(a, b)))
 %     set(gca, 'xtick', 1:numel(nm), 'xticklabel', nm)
     
     flag = true;
@@ -290,7 +295,7 @@ SR.ix = indices;
 corrlist = zeros(numel(indices),1);
 for i=1:numel(indices)
     if indices(i) > 0
-        corrlist(i) = vcorr(mdl_mmnt(i,:), scn_mmnt(indices(i),:));
+        corrlist(i) = simfun(mdl_mmnt(i,:), scn_mmnt(indices(i),:));
     else
         corrlist(i) = 0;
     end
