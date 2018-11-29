@@ -1,4 +1,4 @@
-function SR = regui(num_iters, z, filename, varargin)
+function SR = regui(z, fout, varargin)
 %REGUI Select files via UI and call registration function
 %   Detailed explanation goes here
 
@@ -18,7 +18,7 @@ img = fullfile(path, img);
 cnmf = fullfile(path, cnmf);
 
 if ~exist('filename', 'var')
-    filename = 'test.csv';
+    fout = 'test.csv';
 end
 
 % Read data files
@@ -44,7 +44,7 @@ mdl_im = mean(CNM.Y, 3);
 
 % Run similarity registration
 SR = sim_icp2(scene, scn_im, model, mdl_im, num_iters, varargin);
-savedat(SR, filename)
+savedat(SR, fout)
 
 end
 
