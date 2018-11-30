@@ -1,2 +1,2 @@
-# Image Registration (im_reg)
-Test scripts for implementing registration algorithms
+# Similarity-Weighted Registration (sim_reg)
+Point cloud registration weighted by local image similarity
