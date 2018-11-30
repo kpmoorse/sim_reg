@@ -43,7 +43,7 @@ model = model(:, 1:2);
 mdl_im = mean(CNM.Y, 3);
 
 % Run similarity registration
-SR = sim_icp2(scene, scn_im, model, mdl_im, num_iters, varargin);
+SR = sim_icp2(scene, scn_im, model, mdl_im, varargin);
 savedat(SR, fout)
 
 end

@@ -83,9 +83,9 @@ for i=1:size(model,1)
 end
 
 % Normalize moment magnitudes
-mean_mmnt = mean([scn_mmnt;mdl_mmnt]);
-scn_mmnt = scn_mmnt./mean_mmnt;
-mdl_mmnt = mdl_mmnt./mean_mmnt;
+% mean_mmnt = mean([scn_mmnt;mdl_mmnt]);
+% scn_mmnt = scn_mmnt./mean_mmnt;
+% mdl_mmnt = mdl_mmnt./mean_mmnt;
 
 % Initialize transform estimate as identity matrix
 t_est = t_init;
