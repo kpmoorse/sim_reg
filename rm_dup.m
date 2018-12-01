@@ -7,7 +7,7 @@ for val=reshape(unique(vec), 1, [])
     plist = find(vec==val);
     npts = numel(plist);
     if npts > 1
-        if exist('SR', 'val')
+        if exist('SR', 'var')
             for i=1:npts
                 subplot(1,npts+1,i)
                 imagesc(submask(SR.mdi, SR.mdp(plist(i),:)))
@@ -27,7 +27,7 @@ for val=reshape(unique(vec), 1, [])
         ix(vec==val & fitness~=maxfit) = 0;
     end
 end
-ix = ix~=0;
+ix = ix==0;
 % ix(ix==0) = [];
 vec = vec(ix);
 

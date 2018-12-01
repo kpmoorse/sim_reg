@@ -145,6 +145,10 @@ for i=1:numel(indices)
 end
 SR.cli = corrlist;
 
+[~, ixrm] = rm_dup(SR.ixi, SR.cli);
+SR.ixi(ixrm) = 0;
+SR.cli(ixrm) = 0;
+
 % Display diagnostic plots for each neuron
 T = projective2d(t_est);
 rad = ceil(size(submask(scn_im, scene(1, 1:2)), 1)/2);
@@ -158,8 +162,12 @@ while i<=size(model,1)
     
     j = indices(i);
     
+    if SR.ixi(i)==0
+        i = i+1;
+        continue %skip to next iteration
+    end
     if i>1
-        clf
+        clf %clear figure
     end
     
     % Plot overlaid scene and transformed model images
