@@ -26,7 +26,7 @@ for s = ss
             ff(n-s) / (ff(s) .* ff((n+abs(m))/2 - s) .* ff((n-abs(m))/2 - s)) .* ...
             r.^(n - 2*s);
 end
-Rnm(r>1) = 0;
+Rnm(r>(1-1/40)) = 0;
 
 end
 

@@ -145,7 +145,7 @@ for i=1:numel(indices)
 end
 SR.cli = corrlist;
 
-[~, ixrm] = rm_dup(SR.ixi, SR.cli);
+ixrm = rm_dup(SR.ixi, SR.cli);
 SR.ixi(ixrm) = 0;
 SR.cli(ixrm) = 0;
 

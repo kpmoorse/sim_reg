@@ -16,6 +16,8 @@ lmat = fullfile(path, lmat);
 img = fullfile(path, img);
 [cnmf, path] = uigetfile(fullfile(path, '*.mat'), "Select CNMF data (functional)");
 cnmf = fullfile(path, cnmf);
+[ymat, path] = uigetfile(fullfile(path, '*.tif;*.tiff'), "Select image hyperstack (functional)");
+ymat = fullfile(path, ymat);
 
 if ~exist('filename', 'var')
     fout = 'test.csv';
@@ -25,10 +27,11 @@ end
 disp("Reading TIFF files...")
 lmat = bigread2(lmat);
 img = bigread2(img);
+ymat = bigread2(ymat);
 
+disp("Loading MAT file...")
 S = whos('-file', cnmf);
 nam = cell2mat(regexp(cell2mat({S.name}),'(?i)cnmf?','match'));
-disp("Loading MAT file...")
 CNM = load(cnmf, nam);
 CNM = CNM.(nam);
 
@@ -40,7 +43,7 @@ scn_im = img(:,:,z);
 % CNM.COM()
 model = fliplr(CNM.cm);
 model = model(:, 1:2);
-mdl_im = mean(CNM.Y, 3);
+mdl_im = mean(ymat(:,:,(z-1):9:end),3);%mean(CNM.Y, 3);
 
 % Run similarity registration
 SR = sim_icp2(scene, scn_im, model, mdl_im, varargin);
