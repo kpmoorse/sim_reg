@@ -11,7 +11,7 @@ for val=reshape(unique(vec), 1, [])
     plist = find(vec==val);
     npts = numel(plist);
     % If a value is not unique, remove duplicates
-    if npts > 2
+    if npts > 1
         % Plot visualization if data structure is provided
         if exist('SR', 'var')
             for i=1:npts
@@ -19,7 +19,7 @@ for val=reshape(unique(vec), 1, [])
                 imagesc(submask(SR.mdi, SR.mdp(plist(i),:)))
                 hold on, plot(21,21,'wo')
                 daspect([1 1 1])
-                title(sprintf('iModel=%i, sim=%.3f', plist(i), SR.cl(plist(i))))
+                title(sprintf('iModel=%i, sim=%.3f', plist(i), SR.cli(plist(i))))
                 set(gca, 'XTick', [])
                 set(gca, 'YTick', [])
             end

@@ -2,10 +2,6 @@ function SR = regui(z, fout, varargin)
 %REGUI Select files via UI and call registration function
 %   Detailed explanation goes here
 
-if ~exist('num_iters', 'var')
-    num_iters = 10;
-end
-
 % Suppress "Error updating Button" warning
 warning('off', 'MATLAB:handle_graphics:exceptions:SceneNode');
 
@@ -37,13 +33,14 @@ CNM = CNM.(nam);
 
 % Reformat data for function input
 scene = exctrs2(lmat(:,:,z));
+labels = scene(:,1);
 scene = scene(:, 2:3);
 scn_im = img(:,:,z);
 
 % CNM.COM()
 model = fliplr(CNM.cm);
 model = model(:, 1:2);
-mdl_im = mean(ymat(:,:,(z-1):9:end),3);%mean(CNM.Y, 3);
+mdl_im = mean(ymat(:,:,z:11:end),3);%mean(CNM.Y, 3);
 
 % Run similarity registration
 SR = sim_icp2(scene, scn_im, model, mdl_im, varargin);

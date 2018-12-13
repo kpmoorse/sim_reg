@@ -172,8 +172,7 @@ while i<=size(model,1)
     
     % Plot overlaid scene and transformed model images
     subplot(1,2,1)
-    imshow(imadjust(imfuse(imwarp(scale(mdl_im), T), scale(scn_im), 'falsecolor', 'scaling', 'joint', ...
-        'ColorChannels',[1,2,0] ), [0 0 0; 0.5 0.5 0.5])) % mdl=red, scn=grn
+    imshow(imadjust(imfuse(imwarp(scale(mdl_im), T), scale(scn_im)), [0 0 0; 0.5 0.5 0.5])) % mdl=red, scn=grn
     hold on
     plot([scene(j,1), model_current(i,1)], [scene(j,2), model_current(i,2)], 'o-w')
     if l==0
@@ -186,7 +185,7 @@ while i<=size(model,1)
     subplot(2,4,3)
     imshow(submask(mdl_im, model(i, 1:2)),[0,500])
     hold on
-    plot(rad, rad, 'r.', 'MarkerSize', 15)
+    plot(rad, rad, 'm.', 'MarkerSize', 15)
     title(sprintf('Model[%i] (Functional)', i))
     
     % Plot scene submask
@@ -199,18 +198,20 @@ while i<=size(model,1)
     % Plot comparative moments
     subplot(2,2,4)
     a = mdl_mmnt(i, :);
+    a = reshape([real(a);imag(a)],1,[]);
     b = scn_mmnt(j, :);
+    b = reshape([real(b);imag(b)],1,[]);
     
-    scatter(real(a),real(b),400,1:numel(a),'.')
+    scatter(a,b,400,(1:numel(a))/2,'.')
     h = colorbar;
     ylabel(h, 'Moment index');
     
-    xrng = prctile(real(a), [5, 95]);
-    yrng = prctile(real(b), [5, 95]);
+    xrng = prctile(a, [5, 95]);
+    yrng = prctile(b, [5, 95]);
     xlim(xrng + [-1,1]*0.05*diff(xrng));
     ylim(yrng + [-1,1]*0.05*diff(yrng));
-    xlabel('Model')
-    ylabel('Scene')
+    xlabel('Model (|A_{mn}|)')
+    ylabel('Scene (|A_{mn}|)')
     title(sprintf("Normalized Zernike Moments (sim = %.04f)", simfun(a, b)))
     
     flag = true;
