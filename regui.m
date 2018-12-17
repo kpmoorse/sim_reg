@@ -40,7 +40,7 @@ scn_im = img(:,:,z);
 % CNM.COM()
 model = fliplr(CNM.cm);
 model = model(:, 1:2);
-mdl_im = mean(ymat(:,:,z:11:end),3);%mean(CNM.Y, 3);
+mdl_im = mean(ymat(:,:,(z-1):9:end),3);%mean(CNM.Y, 3);
 
 % Run similarity registration
 SR = sim_icp2(scene, scn_im, model, mdl_im, varargin);

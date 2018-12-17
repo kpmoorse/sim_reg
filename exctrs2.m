@@ -1,4 +1,4 @@
-function centroids = exctrs2(img, varargin)
+function [centroids, labels] = exctrs2(img, varargin)
 % EXCTRS2 Extract centroids from 2D label matrix
 %   For every unique value in the 2D matrix img, find all pixels of that
 %   value and calculate their average position (centroid).

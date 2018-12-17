@@ -210,9 +210,10 @@ while i<=size(model,1)
     yrng = prctile(b, [5, 95]);
     xlim(xrng + [-1,1]*0.05*diff(xrng));
     ylim(yrng + [-1,1]*0.05*diff(yrng));
-    xlabel('Model (|A_{mn}|)')
-    ylabel('Scene (|A_{mn}|)')
+    xlabel('Model \{Re(A_{mn}), Im(A_{mn})\}')
+    ylabel('Scene \{Re(A_{mn}), Im(A_{mn})\}')
     title(sprintf("Normalized Zernike Moments (sim = %.04f)", simfun(a, b)))
+    
     
     flag = true;
     while flag
@@ -258,10 +259,11 @@ while i<=size(model,1)
                 j = indices(i);
                 
                 flag = false;
-
+            % On "Exit," jump to end of list and exit function
             case strcmp(uin, 'x')
                 flag = false;
                 i = size(model,1) + 1;
+            % On <number>, jump to model[<number>]
             case ~isempty(str2double(uin)) && ~isnan(str2double(uin))
                 if any(str2double(uin)==1:size(model,1))
                     flag = false;
@@ -317,6 +319,7 @@ end
 function mat = scale(mat)
     mat = mat/max(mat(:));
 end
-function mat = normalize(mat)
-    mat = mat/sum(mat(:));
-end
+
+% function mat = normalize(mat)
+%     mat = mat/sum(mat(:));
+% end
